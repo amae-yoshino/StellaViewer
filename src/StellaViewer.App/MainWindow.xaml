@@ -1,0 +1,405 @@
+<Window x:Class="StellaViewer.App.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:StellaViewer.App" FontSize="14" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" Title="StellaViewer" Icon="Assets/StellaViewer.ico" Width="1200" Height="800" MinWidth="800" MinHeight="500" AllowDrop="True" Drop="OnDrop" PreviewKeyDown="OnKeyDown" Closing="OnClosing">
+ <Window.Resources><SolidColorBrush x:Key="PanelBackground" Color="#F6F7F9"/><SolidColorBrush x:Key="PanelForeground" Color="Black"/><SolidColorBrush x:Key="ViewerBackground" Color="#E0E2E6"/>
+<SolidColorBrush x:Key="DividerBrush" Color="#CCD1D8"/>
+<Style TargetType="MenuItem"><Setter Property="Background" Value="{DynamicResource PanelBackground}"/><Setter Property="Foreground" Value="{DynamicResource PanelForeground}"/><EventSetter Event="SubmenuOpened" Handler="MenuSubmenuOpened"/></Style><Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+ <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Separator"><Border Height="1" Margin="8,4" Background="{DynamicResource DividerBrush}"/></ControlTemplate></Setter.Value></Setter>
+</Style><local:EntryInfoConverter x:Key="EntryInfo"/>
+<ControlTemplate x:Key="ViewerToggleTemplate" TargetType="ToggleButton">
+ <Border x:Name="Surface" CornerRadius="6" Background="Transparent" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" Padding="{TemplateBinding Padding}">
+  <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+ </Border>
+ <ControlTemplate.Triggers>
+  <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource HoverBrush}"/></Trigger>
+  <Trigger Property="IsChecked" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource SelectionBrush}"/><Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Trigger>
+  <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Trigger>
+ </ControlTemplate.Triggers>
+</ControlTemplate>
+<local:SelectedEntryConverter x:Key="SelectedEntry"/><BooleanToVisibilityConverter x:Key="BooleanVisibility"/>
+<ContextMenu x:Key="FileContextMenu" x:Shared="False" Opened="FileContextMenuOpened" BorderBrush="{DynamicResource DividerBrush}" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}">
+ <MenuItem Header="フルパスをコピー" Click="CopyFullPathClicked"/>
+ <MenuItem Header="ファイル名をコピー" Click="CopyFileNameClicked"/>
+ <Separator/><MenuItem Header="エクスプローラーで表示" Click="RevealFileClicked"/>
+ <MenuItem Header="関連付けで開く" Click="OpenAssociatedClicked" ToolTip="Windowsの既定のアプリで開きます"/>
+ <MenuItem Header="送る（コピー）…" Click="SendFilesClicked"/>
+ <MenuItem Header="ゴミ箱へ移動…" Click="DeleteFilesClicked"/>
+ <Separator/><MenuItem Header="お気に入りに登録" Click="FavoriteItemClicked"/>
+</ContextMenu>
+<Style x:Key="FileItemStyle" TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+ <Setter Property="ContextMenu" Value="{StaticResource FileContextMenu}"/>
+ <EventSetter Event="PreviewMouseRightButtonDown" Handler="PreserveSelectionOnRightClick"/>
+</Style>
+<Style x:Key="LocationItemStyle" TargetType="ListBoxItem" BasedOn="{StaticResource FileItemStyle}">
+ <EventSetter Event="PreviewMouseLeftButtonDown" Handler="LocationPointerDown"/>
+</Style>
+<Style x:Key="ThumbnailStyle" TargetType="local:Thumbnail"><Setter Property="DecodeSize" Value="{Binding DataContext.ImageThumbnails.DecodeEdge, RelativeSource={RelativeSource AncestorType=Window}}"/><Setter Property="AllowNetwork" Value="{Binding DataContext.AllowNetwork, RelativeSource={RelativeSource AncestorType=Window}}"/><Setter Property="ArchiveSession" Value="{Binding DataContext.ArchiveSession, RelativeSource={RelativeSource AncestorType=Window}}"/><Setter Property="PdfSession" Value="{Binding DataContext.PdfSession, RelativeSource={RelativeSource AncestorType=Window}}"/><Setter Property="TemporaryStore" Value="{Binding DataContext.TemporaryStore, RelativeSource={RelativeSource AncestorType=Window}}"/></Style>
+<Style x:Key="LocationThumbnailStyle" TargetType="local:Thumbnail" BasedOn="{StaticResource ThumbnailStyle}"><Setter Property="DecodeSize" Value="{Binding DataContext.LocationThumbnails.DecodeEdge, RelativeSource={RelativeSource AncestorType=Window}}"/><Setter Property="ArchiveSession" Value="{Binding DataContext.LocationArchiveSession, RelativeSource={RelativeSource AncestorType=Window}}"/><Setter Property="PdfSession" Value="{x:Null}"/></Style>
+<DataTemplate x:Key="NameTemplate">
+ <TextBlock FontSize="{Binding DataContext.ListNameFontSize, RelativeSource={RelativeSource AncestorType=Window}}" Text="{Binding Name}" ToolTip="{Binding DisplayPath}" TextTrimming="CharacterEllipsis" Padding="4,4"/>
+</DataTemplate>
+<DataTemplate x:Key="DetailTemplate">
+ <DockPanel Height="{Binding DataContext.ImageThumbnails.DetailRowHeight, RelativeSource={RelativeSource AncestorType=Window}}">
+  <local:Thumbnail Style="{StaticResource ThumbnailStyle}" FilePath="{Binding Path}" Width="{Binding DataContext.ImageThumbnails.DetailWidth, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.ImageThumbnails.DetailHeight, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Uniform" Margin="2,8,8,8"/>
+  <StackPanel VerticalAlignment="Center">
+   <TextBlock FontSize="{Binding DataContext.ListNameFontSize, RelativeSource={RelativeSource AncestorType=Window}}" Text="{Binding Name}" ToolTip="{Binding DisplayPath}" TextTrimming="CharacterEllipsis"/>
+   <TextBlock Text="{Binding Converter={StaticResource EntryInfo}}" FontSize="{Binding DataContext.ListInfoFontSize, RelativeSource={RelativeSource AncestorType=Window}}" Opacity="0.7" Margin="0,4,0,0"/>
+  </StackPanel>
+ </DockPanel>
+</DataTemplate>
+<DataTemplate x:Key="TileTemplate">
+ <Button Width="{Binding DataContext.ImageThumbnails.TileWidth, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.ImageThumbnails.TileHeight, RelativeSource={RelativeSource AncestorType=Window}}" Padding="4" Margin="0" Click="TileClicked" PreviewMouseRightButtonDown="PreserveSelectionOnRightClick" ToolTip="{Binding DisplayPath}" Foreground="{DynamicResource PanelForeground}" ContextMenu="{StaticResource FileContextMenu}">
+  <Button.Style><Style TargetType="Button">
+   <Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="2" CornerRadius="5" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border>
+   </ControlTemplate></Setter.Value></Setter>
+   <Style.Triggers>
+    <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#183B82F6"/></Trigger>
+    <DataTrigger Value="True"><DataTrigger.Binding><MultiBinding Converter="{StaticResource SelectedEntry}"><Binding Path="Path"/><Binding Path="DataContext.SelectedImagePaths" RelativeSource="{RelativeSource AncestorType=Window}"/></MultiBinding></DataTrigger.Binding><Setter Property="BorderBrush" Value="#5588DD"/><Setter Property="Background" Value="#183B82F6"/></DataTrigger>
+   </Style.Triggers>
+  </Style></Button.Style>
+  <StackPanel><local:Thumbnail Style="{StaticResource ThumbnailStyle}" FilePath="{Binding Path}" Width="{Binding DataContext.ImageThumbnails.TileImageWidth, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.ImageThumbnails.TileImageHeight, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Uniform"/><TextBlock Text="{Binding Name}" FontSize="{Binding DataContext.ListTileFontSize, RelativeSource={RelativeSource AncestorType=Window}}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Height="{Binding DataContext.ListCaptionHeight, RelativeSource={RelativeSource AncestorType=Window}}" TextAlignment="Center" Margin="0,3,0,0"/></StackPanel>
+ </Button>
+</DataTemplate>
+<local:FavoriteIconConverter x:Key="FavoriteIcon"/>
+<local:RecentLocationIconConverter x:Key="RecentLocationIcon"/>
+<DataTemplate x:Key="RecentLocationTemplate">
+ <DockPanel Margin="5,4" ToolTip="{Binding DisplayPath}">
+  <local:VectorIcon Kind="{Binding Converter={StaticResource RecentLocationIcon}}" Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+  <StackPanel><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Information}" FontSize="11" Opacity="0.7" Margin="0,3,0,0"/><TextBlock Text="{Binding DisplayPath}" FontSize="10" Opacity="0.7" TextTrimming="CharacterEllipsis" Margin="0,3,0,0"/></StackPanel>
+ </DockPanel>
+</DataTemplate>
+<DataTemplate x:Key="OperationSourceTemplate">
+ <StackPanel Margin="4" ToolTip="{Binding Path}"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Path}" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" Margin="0,3,0,0"/></StackPanel>
+</DataTemplate>
+<DataTemplate x:Key="DirectoryShortcutTemplate">
+ <DockPanel Margin="5,4" ToolTip="{Binding Path}">
+  <local:VectorIcon Kind="Folder" Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+  <StackPanel>
+   <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/>
+   <TextBlock Text="{Binding StateLabel}" FontSize="11" Margin="0,3,0,0"/>
+   <TextBlock Text="{Binding Path}" FontSize="10" Opacity="0.7" TextTrimming="CharacterEllipsis" Margin="0,3,0,0"/>
+  </StackPanel>
+  <DockPanel.Style><Style TargetType="DockPanel"><Style.Triggers><DataTrigger Binding="{Binding IsAvailable}" Value="False"><Setter Property="Opacity" Value="0.65"/></DataTrigger></Style.Triggers></Style></DockPanel.Style>
+ </DockPanel>
+</DataTemplate>
+<SolidColorBrush x:Key="ZoomForeground" Color="Black"/>
+<SolidColorBrush x:Key="ZoomThumbFill" Color="White"/>
+<Style x:Key="ZoomSliderStyle" TargetType="Slider">
+ <Setter Property="Height" Value="22"/>
+ <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Slider">
+  <Grid Background="Transparent">
+   <Border Height="4" Margin="8,0" VerticalAlignment="Center" Background="{DynamicResource DividerBrush}" CornerRadius="2"/>
+   <Track x:Name="PART_Track" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" Orientation="Horizontal" IsDirectionReversed="{TemplateBinding IsDirectionReversed}">
+    <Track.DecreaseRepeatButton><RepeatButton Command="{x:Static Slider.DecreaseLarge}" Focusable="False" IsTabStop="False"><RepeatButton.Template><ControlTemplate TargetType="RepeatButton"><Grid Background="Transparent"><Border Height="4" Margin="8,0,-8,0" VerticalAlignment="Center" Background="{DynamicResource ZoomForeground}" CornerRadius="2"/></Grid></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+    <Track.Thumb><Thumb Width="16" Height="16"><Thumb.Template><ControlTemplate TargetType="Thumb"><Ellipse x:Name="Grip" Fill="{DynamicResource ZoomThumbFill}" Stroke="{DynamicResource ZoomForeground}" StrokeThickness="1"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+    <Track.IncreaseRepeatButton><RepeatButton Command="{x:Static Slider.IncreaseLarge}" Style="{StaticResource ScrollPageButton}"/></Track.IncreaseRepeatButton>
+   </Track>
+  </Grid>
+  <ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger></ControlTemplate.Triggers>
+ </ControlTemplate></Setter.Value></Setter>
+</Style>
+<DataTemplate x:Key="FavoriteManagementTemplate">
+ <DockPanel Margin="6,5" ToolTip="{Binding Path}">
+  <local:VectorIcon Kind="{Binding Converter={StaticResource FavoriteIcon}}" Width="22" Height="22" Margin="0,0,10,0" VerticalAlignment="Center"/>
+  <StackPanel><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding StateLabel}" FontSize="11" Margin="0,3,0,0"/><TextBlock Text="{Binding Path}" Opacity="0.7" FontSize="11" Margin="0,3,0,0" TextTrimming="CharacterEllipsis"/></StackPanel>
+ </DockPanel>
+</DataTemplate>
+<DataTemplate x:Key="FavoriteTemplate">
+ <DockPanel Margin="5,4" ToolTip="{Binding Path}">
+  <local:VectorIcon Kind="{Binding Converter={StaticResource FavoriteIcon}}" Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center"/>
+  <StackPanel><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Information}" TextTrimming="CharacterEllipsis" FontSize="10" Opacity="0.7" Margin="0,3,0,0"/></StackPanel>
+ </DockPanel>
+</DataTemplate>
+<local:LocationIconConverter x:Key="LocationIcon"/>
+<DataTemplate x:Key="LocationNameTemplate">
+ <DockPanel ToolTip="{Binding DisplayPath}" Margin="4,4">
+  <local:VectorIcon Kind="{Binding Converter={StaticResource LocationIcon}}" Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+  <TextBlock FontSize="{Binding DataContext.ListNameFontSize, RelativeSource={RelativeSource AncestorType=Window}}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+ </DockPanel>
+</DataTemplate>
+<DataTemplate x:Key="LocationDetailTemplate">
+ <DockPanel MinHeight="{Binding DataContext.LocationThumbnails.DetailRowHeight, RelativeSource={RelativeSource AncestorType=Window}}" Margin="2">
+  <Grid Width="{Binding DataContext.LocationThumbnails.DetailWidth, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.LocationThumbnails.DetailHeight, RelativeSource={RelativeSource AncestorType=Window}}" Margin="0,3,7,3">
+   <local:VectorIcon Kind="{Binding Converter={StaticResource LocationIcon}}" Width="{Binding DataContext.LocationThumbnails.DetailIconSize, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.LocationThumbnails.DetailIconSize, RelativeSource={RelativeSource AncestorType=Window}}" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.85">
+    <local:VectorIcon.Style><Style TargetType="local:VectorIcon"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Source, ElementName=LocationPreview}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></local:VectorIcon.Style>
+   </local:VectorIcon>
+   <local:Thumbnail x:Name="LocationPreview" Style="{StaticResource LocationThumbnailStyle}" FilePath="{Binding Path}" Width="{Binding DataContext.LocationThumbnails.DetailWidth, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.LocationThumbnails.DetailHeight, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Uniform"/>
+  </Grid>
+  <StackPanel VerticalAlignment="Center">
+   <TextBlock FontSize="{Binding DataContext.ListNameFontSize, RelativeSource={RelativeSource AncestorType=Window}}" Text="{Binding Name}" ToolTip="{Binding DisplayPath}" TextTrimming="CharacterEllipsis"/>
+   <TextBlock Text="{Binding Information}" ToolTip="{Binding Information}" FontSize="{Binding DataContext.ListSmallInfoFontSize, RelativeSource={RelativeSource AncestorType=Window}}" Opacity="0.7" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="42" Margin="0,3,0,0"/>
+  </StackPanel>
+ </DockPanel>
+</DataTemplate>
+<DataTemplate x:Key="LocationTileTemplate">
+ <Button Width="{Binding DataContext.LocationThumbnails.TileWidth, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.LocationThumbnails.TileHeight, RelativeSource={RelativeSource AncestorType=Window}}" Padding="4" Margin="0" Click="LocationTileClicked" PreviewMouseRightButtonDown="PreserveSelectionOnRightClick" PreviewMouseLeftButtonDown="LocationPointerDown" ToolTip="{Binding DisplayPath}" Foreground="{DynamicResource PanelForeground}" ContextMenu="{StaticResource FileContextMenu}">
+  <Button.Style><Style TargetType="Button">
+   <Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="2" CornerRadius="6" Padding="{TemplateBinding Padding}"><ContentPresenter/></Border>
+   </ControlTemplate></Setter.Value></Setter>
+   <Style.Triggers>
+    <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{DynamicResource HoverBrush}"/></Trigger>
+    <DataTrigger Value="True"><DataTrigger.Binding><MultiBinding Converter="{StaticResource SelectedEntry}"><Binding Path="Path"/><Binding Path="DataContext.SelectedLocationPaths" RelativeSource="{RelativeSource AncestorType=Window}"/></MultiBinding></DataTrigger.Binding><Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/><Setter Property="Background" Value="{DynamicResource SelectionBrush}"/></DataTrigger>
+   </Style.Triggers>
+  </Style></Button.Style>
+  <StackPanel>
+   <Grid Width="{Binding DataContext.LocationThumbnails.TileImageWidth, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.LocationThumbnails.TileImageHeight, RelativeSource={RelativeSource AncestorType=Window}}">
+    <Border CornerRadius="5" Background="{DynamicResource HoverBrush}"/>
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.85">
+     <StackPanel.Style><Style TargetType="StackPanel"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding Source, ElementName=TileLocationPreview}" Value="{x:Null}"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></StackPanel.Style>
+     <local:VectorIcon Kind="{Binding Converter={StaticResource LocationIcon}}" Width="{Binding DataContext.LocationThumbnails.TileIconSize, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.LocationThumbnails.TileIconSize, RelativeSource={RelativeSource AncestorType=Window}}" HorizontalAlignment="Center"/>
+     <TextBlock Text="{Binding Kind}" FontSize="{Binding DataContext.ListSmallInfoFontSize, RelativeSource={RelativeSource AncestorType=Window}}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+    </StackPanel>
+    <local:Thumbnail x:Name="TileLocationPreview" Style="{StaticResource LocationThumbnailStyle}" FilePath="{Binding Path}" Width="{Binding DataContext.LocationThumbnails.TileImageWidth, RelativeSource={RelativeSource AncestorType=Window}}" Height="{Binding DataContext.LocationThumbnails.TileImageHeight, RelativeSource={RelativeSource AncestorType=Window}}" Stretch="Uniform"/>
+   </Grid>
+   <TextBlock Text="{Binding Name}" FontSize="{Binding DataContext.ListTileFontSize, RelativeSource={RelativeSource AncestorType=Window}}" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" Height="{Binding DataContext.ListCaptionHeight, RelativeSource={RelativeSource AncestorType=Window}}" TextAlignment="Center" Margin="0,3,0,0"/>
+  </StackPanel>
+ </Button>
+</DataTemplate></Window.Resources>
+ <Grid x:Name="WindowSurface" PreviewMouseMove="FullscreenPointerMove" MouseLeave="FullscreenPointerLeave">
+ <DockPanel x:Name="Shell" Background="{DynamicResource PanelBackground}">
+  <StackPanel x:Name="TopBars" DockPanel.Dock="Top">
+  <Menu x:Name="MainMenu" DockPanel.Dock="Top" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" Padding="8,2">
+   <MenuItem Header="ファイル(_F)" SubmenuOpened="FileMenuOpened">
+    <MenuItem Header="画像を開く…" Click="OpenImageClick"/>
+    <MenuItem Header="フォルダを開く…" Click="OpenFolderClick"/>
+    <Separator/><MenuItem Header="フルパスをコピー" Click="CopyFullPathClicked"/>
+    <MenuItem Header="ファイル名をコピー" Click="CopyFileNameClicked"/>
+    <MenuItem Header="エクスプローラーで表示" Click="RevealFileClicked"/>
+    <MenuItem Header="関連付けで開く" Click="OpenAssociatedClicked"/>
+    <MenuItem x:Name="SendFileMenu" Header="送る（コピー）…" Click="SendFilesClicked"/>
+    <MenuItem x:Name="DeleteFileMenu" Header="ゴミ箱へ移動…" Click="DeleteFilesClicked"/>
+    <MenuItem x:Name="UndoDeleteMenu" Header="直近の削除を取り消す" Click="UndoDeleteClicked"/>
+    <Separator/><MenuItem Header="終了" Click="ExitClick"/>
+   </MenuItem>
+   <MenuItem Header="表示(_V)">
+    <MenuItem x:Name="FullscreenMenu" Header="全画面表示" IsCheckable="True" Click="FullscreenClick"/>
+    <MenuItem Header="トレイへ格納" Click="StoreToTrayClicked"/>
+    <MenuItem Header="画像情報" Click="InfoClick"/>
+    <Separator/><MenuItem x:Name="DarkTheme" Header="ダークテーマ" IsCheckable="True" Click="PreferenceClick"/>
+    <MenuItem Header="画像一覧">
+     <MenuItem Header="ファイル名のみ" Tag="0" Click="ListModeMenuClick"/>
+     <MenuItem Header="詳細表示" Tag="1" Click="ListModeMenuClick"/>
+     <MenuItem Header="タイル表示" Tag="2" Click="ListModeMenuClick"/>
+    </MenuItem>
+    <MenuItem Header="フォルダ・書庫一覧">
+     <MenuItem Header="名前のみ" Tag="0" Click="LocationModeMenuClick"/>
+     <MenuItem Header="詳細表示" Tag="1" Click="LocationModeMenuClick"/>
+     <MenuItem Header="タイル表示" Tag="2" Click="LocationModeMenuClick"/>
+    </MenuItem>
+   </MenuItem>
+   <MenuItem Header="画像(_I)">
+    <MenuItem Header="初期表示に戻す" Click="ResetClick"/>
+    <MenuItem Header="左へ90°回転" Click="RotateLeft"/><MenuItem Header="右へ90°回転" Click="RotateRight"/>
+   </MenuItem>
+   <MenuItem Header="移動(_M)">
+    <MenuItem Header="戻る" Click="BackClick" IsEnabled="{Binding CanGoBack}"/>
+    <MenuItem Header="進む" Click="ForwardClick" IsEnabled="{Binding CanGoForward}"/>
+    <MenuItem Header="上へ" Click="UpClick"/>
+    <MenuItem x:Name="ReloadMenu" Header="再読み込み" Click="ReloadClick" InputGestureText="F5"/>
+    <Separator/><MenuItem Header="履歴一覧を表示" Click="ShowRecentLocationsClicked"/>
+   </MenuItem>
+   <MenuItem Header="ページ(_P)">
+    <MenuItem x:Name="PreviousPageMenu" Header="前の画像" Click="PreviousPageClick" InputGestureText="←"/>
+    <MenuItem x:Name="NextPageMenu" Header="次の画像" Click="NextPageClick" InputGestureText="→"/>
+    <Separator/>
+    <MenuItem x:Name="FirstPageMenu" Header="最初の画像を開く" Click="FirstPageClick"/>
+    <MenuItem x:Name="LastPageMenu" Header="最後の画像を開く" Click="LastPageClick"/>
+    <MenuItem Header="番号を指定して移動…" Click="FocusPageClick"/>
+    <Separator/><MenuItem x:Name="SlideshowMenu" Header="スライドショー" IsCheckable="True" IsChecked="{Binding IsChecked, ElementName=SlideshowToggle, Mode=OneWay}" Click="SlideshowClicked"/>
+   </MenuItem>
+   <MenuItem Header="お気に入り(_B)" SubmenuOpened="FavoritesMenuOpened">
+    <MenuItem Header="一覧を表示" Click="ShowFavoritesClicked"/>
+    <MenuItem x:Name="FavoriteImageMenu" Header="現在の画像を登録" Click="FavoriteImageClicked"/>
+    <MenuItem x:Name="FavoritePlaceMenu" Header="現在の場所を登録" Click="FavoritePlaceClicked"/>
+    <Separator/><MenuItem Header="登録を管理…" Click="ManageFavoritesClicked"/>
+    <Separator/><MenuItem Header="フォルダリンクを表示" Click="ShowDirectoryShortcutsClicked"/>
+    <MenuItem Header="フォルダリンクにフォルダを追加…" Click="AddDirectoryShortcutClicked"/>
+    <MenuItem Header="フォルダリンクを編集…" Click="ManageDirectoryShortcutsClicked"/>
+   </MenuItem>
+   <MenuItem Header="オプション(_O)">
+    <MenuItem Header="設定…" Click="SettingsClicked"/>
+   </MenuItem>
+   <MenuItem Header="ヘルプ(_H)"><MenuItem Header="ショートカット一覧…" Click="ShortcutsClick"/><Separator/><MenuItem x:Name="AboutMenu" Header="バージョン情報…" Click="AboutClicked"/></MenuItem>
+  </Menu>
+  <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1" Padding="6,3">
+   <DockPanel>
+    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+     <Button x:Name="BackButton" Click="BackClick" IsEnabled="{Binding CanGoBack}" ToolTip="戻る" AutomationProperties.Name="戻る" Width="32" Height="32" Padding="5"><local:VectorIcon Kind="Back" Width="18" Height="18"/></Button>
+     <Button x:Name="ForwardButton" Click="ForwardClick" IsEnabled="{Binding CanGoForward}" ToolTip="進む" AutomationProperties.Name="進む" Width="32" Height="32" Padding="5"><local:VectorIcon Kind="Forward" Width="18" Height="18"/></Button>
+     <Button Click="UpClick" ToolTip="上の階層へ" AutomationProperties.Name="上の階層へ" Width="32" Height="32" Padding="5"><local:VectorIcon Kind="Up" Width="18" Height="18"/></Button>
+     <Button Click="ReloadClick" ToolTip="再読み込み（F5）" AutomationProperties.Name="再読み込み" Width="32" Height="32" Padding="5"><local:VectorIcon Kind="Refresh" Width="18" Height="18"/></Button>
+    </StackPanel>
+    <Button DockPanel.Dock="Right" Click="SettingsClicked" ToolTip="設定とショートカット一覧" Height="32" VerticalAlignment="Center"><local:IconLabel Kind="Settings" Text="設定"/></Button>
+    <local:BreadcrumbBar x:Name="ImageAddress" CurrentPath="{Binding CurrentAddress}" NavigateRequested="BreadcrumbNavigate" Margin="8,0" VerticalAlignment="Center"/>
+   </DockPanel>
+  </Border>
+  </StackPanel>
+  <Border x:Name="BottomBar" DockPanel.Dock="Bottom" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,1,0,0" Padding="8,2" TextElement.FontSize="12">
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <TextBlock Text="{Binding Status}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+    <StackPanel Grid.Column="1" Orientation="Horizontal">
+     <Button x:Name="ThemeButton" Click="ThemeButtonClicked" ToolTip="ダークテーマへ切り替え" Padding="6,1" Margin="4,0,0,0"><local:IconLabel Kind="Sun" Text="ライト" IconSize="14"/></Button>
+     <Button x:Name="FullscreenButton" Click="FullscreenClick" ToolTip="全画面表示を切り替え（Escで終了）" Padding="6,1" Margin="4,0"><local:IconLabel Kind="Fullscreen" Text="全画面" IconSize="14"/></Button>
+     <StackPanel Orientation="Horizontal" IsEnabled="{Binding HasImage}">
+     <Button Click="ResetClick" Margin="6,0" Padding="6,1" ToolTip="初期表示の倍率に戻す"><local:IconLabel Kind="Reset" Text="リセット" IconSize="14"/></Button>
+     <Slider x:Name="ZoomSlider" Style="{StaticResource ZoomSliderStyle}" Width="180" Minimum="-2.302585" Maximum="2.302585092994046" ValueChanged="ZoomChanged" VerticalAlignment="Center" ToolTip="表示倍率"/>
+     <TextBox x:Name="ZoomText" Width="{DynamicResource UiZoomWidth}" Height="22" FontSize="12" Padding="4,0" VerticalAlignment="Center" Text="100" IsReadOnly="True" PreviewMouseLeftButtonDown="ZoomEdit" KeyDown="ZoomEntered" LostKeyboardFocus="ZoomLostFocus" VerticalContentAlignment="Center" TextAlignment="Right" ToolTip="クリックして整数倍率を入力"/>
+     <TextBlock Text="%" VerticalAlignment="Center" Margin="3,0"/>
+     </StackPanel>
+    </StackPanel>
+   </Grid>
+  </Border>
+  <Grid x:Name="MainGrid" SizeChanged="PaneLayoutChanged"><Grid.ColumnDefinitions><ColumnDefinition Width="400" MinWidth="280"/><ColumnDefinition Width="8"/><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <Grid x:Name="LeftPane" SizeChanged="PaneLayoutChanged"><Grid.RowDefinitions><RowDefinition Height="230" MinHeight="100"/><RowDefinition Height="7"/><RowDefinition MinHeight="160"/></Grid.RowDefinitions>
+    <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+     <WrapPanel Orientation="Horizontal" Margin="4,1">
+      <Button x:Name="FolderViewButton" Click="ShowFoldersClicked" Padding="5,2"><local:IconLabel Kind="Folder" Text="フォルダ"/></Button>
+      <ToggleButton x:Name="FavoritesButton" AllowDrop="True" PreviewDragOver="RegistrationDragOver" PreviewDrop="RegistrationDropped" Click="FavoritesToggled" Foreground="{DynamicResource PanelForeground}" Template="{StaticResource ViewerToggleTemplate}" Padding="6,2" Margin="4,0,0,0" ToolTip="お気に入り一覧に切り替える"><local:IconLabel Kind="Star" Text="お気に入り"/></ToggleButton>
+      <StackPanel Orientation="Horizontal">
+      <ToggleButton x:Name="DirectoryShortcutsButton" AllowDrop="True" PreviewDragOver="RegistrationDragOver" PreviewDrop="RegistrationDropped" Click="DirectoryShortcutsClicked" Foreground="{DynamicResource PanelForeground}" Template="{StaticResource ViewerToggleTemplate}" Padding="6,2" Margin="4,0,0,0" ToolTip="フォルダリンクの専用一覧"><local:IconLabel Kind="Folder" Text="フォルダリンク"/></ToggleButton>
+      <ToggleButton x:Name="RecentLocationsButton" Click="RecentLocationsClicked" Foreground="{DynamicResource PanelForeground}" Template="{StaticResource ViewerToggleTemplate}" Padding="6,2" Margin="4,0,0,0" ToolTip="最近開いたフォルダ・書庫・PDFの履歴"><local:IconLabel Kind="History" Text="履歴"/></ToggleButton>
+      </StackPanel>
+     </WrapPanel>
+     <Grid Grid.Row="1" x:Name="FolderBrowserPanel" PreviewMouseLeftButtonDown="RegistrationSourceDown" PreviewMouseMove="RegistrationSourceMove"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+     <DockPanel Margin="4,2"><ToggleButton x:Name="TreeToggle" DockPanel.Dock="Left" IsChecked="True" Click="TreeVisibilityClicked" Template="{StaticResource ViewerToggleTemplate}" Foreground="{DynamicResource PanelForeground}" Padding="5,2" Margin="0,0,4,0" ToolTip="フォルダツリーの表示・非表示">ツリー</ToggleButton><local:BreadcrumbBar x:Name="FolderAddress" CurrentPath="{Binding LocationFolder}" NavigateRequested="BreadcrumbNavigate"/></DockPanel>
+     <Grid Grid.Row="1" x:Name="FolderColumns"><Grid.ColumnDefinitions><ColumnDefinition Width="*" MinWidth="70"/><ColumnDefinition Width="7"/><ColumnDefinition Width="1.2*" MinWidth="100"/></Grid.ColumnDefinitions>
+      <TreeView Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" x:Name="Folders" TreeViewItem.Expanded="FolderExpanded" SelectedItemChanged="FolderSelected" PreviewMouseLeftButtonDown="TreePointerDown"/>
+      <GridSplitter x:Name="FolderColumnSplitter" Grid.Column="1" Width="7" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Cursor="SizeWE" ToolTip="ツリーとフォルダ一覧の幅を調整"/>
+      <DockPanel Grid.Column="2" Margin="4,0">
+       <StackPanel DockPanel.Dock="Top" Margin="0,2,0,5">
+        <TextBlock Text="{Binding LocationsStatus}" ToolTip="{Binding LocationsStatus}" FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+        <Grid>
+         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="5"/><ColumnDefinition/></Grid.ColumnDefinitions>
+        <ComboBox x:Name="LocationModeBox" SelectedIndex="1" Height="28" HorizontalAlignment="Stretch" SelectionChanged="LocationModeChanged" ToolTip="フォルダ・書庫一覧の表示方法">
+         <ComboBoxItem Content="名前のみ"/><ComboBoxItem Content="詳細表示"/><ComboBoxItem Content="タイル表示"/>
+        </ComboBox>
+        <ComboBox Grid.Column="2" x:Name="LocationSortBox" SelectedValuePath="Tag" SelectedIndex="0" Height="28" HorizontalAlignment="Stretch" SelectionChanged="LocationSortingChanged" ToolTip="フォルダを先に、書庫・PDFを後に並べます。サイズ・日時不明の項目は各グループの末尾に表示します。"><ComboBoxItem Tag="0" Content="名前（昇順）"/><ComboBoxItem Tag="3" Content="名前（降順）"/><ComboBoxItem Tag="1" Content="更新日時（昇順）"/><ComboBoxItem Tag="4" Content="更新日時（降順）"/><ComboBoxItem Tag="2" Content="サイズ（昇順）"/><ComboBoxItem Tag="5" Content="サイズ（降順）"/></ComboBox>
+        </Grid>
+       </StackPanel>
+      <Grid x:Name="LocationArea" SizeChanged="LocationAreaChanged" PreviewKeyDown="LocationKeyDown" PreviewMouseWheel="LocationScrollUserInput" PreviewMouseLeftButtonDown="LocationScrollUserInput">
+        <ListBox SelectionMode="Extended" x:Name="Locations" PreviewMouseWheel="ListWheel" VirtualizingPanel.CacheLengthUnit="Item" VirtualizingPanel.CacheLength="2,2" VirtualizingPanel.ScrollUnit="Pixel" ItemContainerStyle="{StaticResource LocationItemStyle}" ItemsSource="{Binding Locations}" ItemTemplate="{StaticResource LocationDetailTemplate}" SelectionChanged="LocationSelected" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" HorizontalContentAlignment="Stretch"/>
+        <ListBox x:Name="LocationTileList" ScrollViewer.ScrollChanged="TileViewportChanged" PreviewMouseWheel="ListWheel" VirtualizingPanel.CacheLengthUnit="Item" VirtualizingPanel.CacheLength="2,2" VirtualizingPanel.ScrollUnit="Pixel" KeyDown="TileSelectionKeyDown" Visibility="Collapsed" ItemsSource="{Binding LocationTileRows}" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" HorizontalContentAlignment="Stretch">
+         <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Height" Value="{Binding DataContext.LocationThumbnails.TileHeight, RelativeSource={RelativeSource AncestorType=Window}}"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0"/><Setter Property="Focusable" Value="False"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><ContentPresenter/></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle>
+         <ListBox.ItemTemplate><DataTemplate><ItemsControl ItemsSource="{Binding}" ItemTemplate="{StaticResource LocationTileTemplate}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl></DataTemplate></ListBox.ItemTemplate>
+        </ListBox>
+       </Grid>
+      </DockPanel>
+     </Grid>
+     </Grid>
+     <DockPanel Grid.Row="1" x:Name="FavoritesPanel" AllowDrop="True" PreviewDragOver="RegistrationDragOver" PreviewDrop="RegistrationDropped" Visibility="Collapsed" Margin="4,2">
+      <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+       <Button DockPanel.Dock="Right" Click="RefreshFavoritesClicked" Padding="4,2" ToolTip="お気に入りを更新"><local:VectorIcon Kind="Refresh" Width="16" Height="16"/></Button>
+       <Button DockPanel.Dock="Right" Click="ManageFavoritesClicked" Padding="5,2" Margin="3,0">管理…</Button>
+       <TextBlock x:Name="FavoritesStatus" Text="お気に入り" VerticalAlignment="Center" FontSize="11" TextTrimming="CharacterEllipsis"/>
+      </DockPanel>
+      <ListBox x:Name="FavoriteList" ItemsSource="{Binding Favorites}" ItemTemplate="{StaticResource FavoriteTemplate}" ItemContainerStyle="{StaticResource FileItemStyle}" SelectionChanged="FavoriteSelected" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"/>
+     </DockPanel>
+     <DockPanel Grid.Row="1" x:Name="DirectoryShortcutsPanel" AllowDrop="True" PreviewDragOver="RegistrationDragOver" PreviewDrop="RegistrationDropped" Visibility="Collapsed" Margin="4,2">
+      <StackPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+       <TextBlock x:Name="DirectoryShortcutsStatus" Text="フォルダリンク" FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,0,0,4"/>
+       <StackPanel Orientation="Horizontal">
+        <Button Click="AddDirectoryShortcutClicked" Content="追加…" Padding="6,2"/>
+        <Button Click="AddCurrentDirectoryShortcutClicked" Content="現在地を登録" IsEnabled="{Binding CanRegisterDirectoryShortcut}" Padding="6,2" Margin="3,0" ToolTip="フォルダ・書庫一覧で開いている通常フォルダを登録"/>
+        <Button Click="ManageDirectoryShortcutsClicked" Content="編集…" Padding="6,2"/>
+        <Button Click="RefreshDirectoryShortcutsClicked" Padding="4,2" Margin="3,0" ToolTip="一覧を更新"><local:VectorIcon Kind="Refresh" Width="16" Height="16"/></Button>
+       </StackPanel>
+      </StackPanel>
+      <ListBox x:Name="DirectoryShortcutList" ItemsSource="{Binding DirectoryShortcuts}" ItemTemplate="{StaticResource DirectoryShortcutTemplate}" SelectionChanged="DirectoryShortcutSelected" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"/>
+     </DockPanel>
+     <DockPanel Grid.Row="1" x:Name="RecentLocationsPanel" Visibility="Collapsed" Margin="4,2">
+      <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4">
+       <Button DockPanel.Dock="Right" Content="全削除" Click="ClearRecentLocationsClicked" Padding="4,2"/><Button DockPanel.Dock="Right" Click="RefreshRecentLocationsClicked" Padding="4,2" ToolTip="履歴を更新"><local:VectorIcon Kind="Refresh" Width="16" Height="16"/></Button>
+       <TextBlock x:Name="RecentLocationsStatus" Text="履歴" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+      </DockPanel>
+      <ListBox x:Name="RecentLocationList" PreviewMouseRightButtonDown="RecentContextPointer" ItemsSource="{Binding RecentLocations}" ItemTemplate="{StaticResource RecentLocationTemplate}" SelectionChanged="RecentLocationSelected" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+       <ListBox.ContextMenu><ContextMenu><MenuItem Header="履歴から削除" Click="RemoveRecentLocationClicked"/></ContextMenu></ListBox.ContextMenu>
+      </ListBox>
+     </DockPanel>
+    </Grid>
+        <GridSplitter x:Name="LeftRowSplitter" Grid.Row="1" Height="7" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Cursor="SizeNS" ToolTip="フォルダ欄と画像欄の高さを調整"/>
+    <Grid x:Name="ImagePane" Grid.Row="2"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition MinHeight="80"/></Grid.RowDefinitions>
+    <StackPanel x:Name="ImageControls" Margin="6,5" SizeChanged="PaneLayoutChanged">
+     <DockPanel Margin="0,0,0,5">
+      <TextBlock Text="画像一覧" FontWeight="SemiBold" VerticalAlignment="Center" Margin="3,0"/>
+      <TextBlock Text="{Binding ListingStatus}" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="5,0"/>
+     </DockPanel>
+     <Grid Margin="0,0,0,5">
+      <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="5"/><ColumnDefinition/></Grid.ColumnDefinitions>
+      <ComboBox x:Name="ListModeBox" Height="28" HorizontalAlignment="Stretch" SelectedIndex="1" SelectionChanged="ListModeChanged" ToolTip="画像一覧の表示方法"><ComboBoxItem Content="ファイル名のみ"/><ComboBoxItem Content="詳細表示"/><ComboBoxItem Content="タイル表示"/></ComboBox>
+      <ComboBox Grid.Column="2" x:Name="SortBox" SelectedValuePath="Tag" SelectedIndex="0" SelectionChanged="SortingChanged" Height="28" HorizontalAlignment="Stretch" ToolTip="画像一覧の並べ替え"><ComboBoxItem Tag="0" Content="名前（昇順）"/><ComboBoxItem Tag="3" Content="名前（降順）"/><ComboBoxItem Tag="1" Content="更新日時（昇順）"/><ComboBoxItem Tag="4" Content="更新日時（降順）"/><ComboBoxItem Tag="2" Content="サイズ（昇順）"/><ComboBoxItem Tag="5" Content="サイズ（降順）"/></ComboBox>
+     </Grid>
+     <TextBox x:Name="SearchBox" TextChanged="SearchChanged" ToolTip="名前検索（部分一致）" Height="28" VerticalAlignment="Center" VerticalContentAlignment="Center" Padding="8,0" Margin="0,0,0,5"/>
+
+    </StackPanel>
+    <Grid Grid.Row="1" x:Name="ListArea" PreviewMouseLeftButtonDown="RegistrationSourceDown" PreviewMouseMove="RegistrationSourceMove" SizeChanged="ListAreaChanged">
+     <ListBox Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" SelectionMode="Extended" x:Name="ImageList" PreviewMouseWheel="ListWheel" VirtualizingPanel.CacheLengthUnit="Item" VirtualizingPanel.CacheLength="2,2" VirtualizingPanel.ScrollUnit="Pixel" ItemContainerStyle="{StaticResource FileItemStyle}" ItemsSource="{Binding Entries}" ItemTemplate="{StaticResource DetailTemplate}" SelectionChanged="ImageSelected" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" HorizontalContentAlignment="Stretch"/>
+     <ListBox x:Name="TileList" ScrollViewer.ScrollChanged="TileViewportChanged" PreviewMouseWheel="ListWheel" VirtualizingPanel.CacheLengthUnit="Item" VirtualizingPanel.CacheLength="2,2" VirtualizingPanel.ScrollUnit="Pixel" KeyDown="TileSelectionKeyDown" Visibility="Collapsed" ItemsSource="{Binding TileRows}" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" HorizontalContentAlignment="Stretch">
+      <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Height" Value="{Binding DataContext.ImageThumbnails.TileHeight, RelativeSource={RelativeSource AncestorType=Window}}"/><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0"/><Setter Property="Focusable" Value="False"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><ContentPresenter/></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle>
+      <ListBox.ItemTemplate><DataTemplate><ItemsControl ItemsSource="{Binding}" ItemTemplate="{StaticResource TileTemplate}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl></DataTemplate></ListBox.ItemTemplate>
+     </ListBox>
+    </Grid>
+   </Grid>
+   </Grid>
+   <GridSplitter x:Name="LeftWidthSplitter" Grid.Column="1" Width="8" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Cursor="SizeWE" ToolTip="左ペインの幅を調整"/>
+   <DockPanel x:Name="ViewerPane" Grid.Column="2">
+    <Border x:Name="ViewerToolbar" DockPanel.Dock="Top" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,0,1" Padding="8,3" TextElement.FontSize="12">
+     <WrapPanel>
+      <StackPanel Orientation="Horizontal" Margin="0,0,8,0">
+       <TextBlock Text="移動先 " VerticalAlignment="Center"/>
+       <TextBox x:Name="PageBox" Width="{DynamicResource UiPageWidth}" KeyDown="PageEntered" ToolTip="画像番号を入力してEnter" Padding="4,2" VerticalContentAlignment="Center"/>
+       <TextBlock Text=" 枚目" VerticalAlignment="Center"/>
+      </StackPanel>
+      <Button x:Name="FitViewportButton" Click="FitViewportClicked" Padding="8,2" Margin="2" ToolTip="画像全体を表示領域に合わせる（最大1000%）。もう一度押すと元の表示に戻る" AutomationProperties.Name="画像を表示領域に合わせる"><local:IconLabel Kind="Fit" Text="領域に合わせる"/></Button>
+      <Button x:Name="ActualSizeButton" Click="ActualSizeClicked" Padding="8,2" Margin="2" ToolTip="元画像の1画素を画面の1画素で表示。もう一度押すと元の表示に戻る" AutomationProperties.Name="100%表示">100%表示</Button>
+      <Button Click="RotateLeft" Padding="8,2" ToolTip="左へ90°回転"><local:IconLabel Kind="RotateLeft" Text="左へ90°"/></Button>
+      <Button Click="RotateRight" Padding="8,2" ToolTip="右へ90°回転"><local:IconLabel Kind="RotateRight" Text="右へ90°"/></Button>
+      <ToggleButton x:Name="GridToggle" Click="GridToggleClicked" Padding="8,2" Margin="2" ToolTip="グリッド表示を切り替え（間隔・色は設定から変更）" AutomationProperties.Name="グリッド表示の切り替え" Foreground="{DynamicResource PanelForeground}" Template="{StaticResource ViewerToggleTemplate}"><local:IconLabel Kind="Grid" Text="グリッド"/></ToggleButton>
+      <ToggleButton x:Name="SpreadToggle" Click="SpreadToggleClicked" Padding="8,2" Margin="2" ToolTip="単ページ／見開きを切り替え" AutomationProperties.Name="単ページと見開きの切り替え" Foreground="{DynamicResource PanelForeground}" Template="{StaticResource ViewerToggleTemplate}"><local:IconLabel Kind="SinglePage" Text="単ページ"/></ToggleButton>
+      <ToggleButton x:Name="SlideshowToggle" Click="SlideshowClicked" Padding="8,2" Margin="2" ToolTip="スライドショーを開始（間隔は設定から変更）" AutomationProperties.Name="スライドショー" Foreground="{DynamicResource PanelForeground}" Template="{StaticResource ViewerToggleTemplate}"><local:IconLabel Kind="Play" Text="スライドショー"/></ToggleButton>
+     </WrapPanel>
+    </Border>
+    <Grid x:Name="Viewport" Background="{DynamicResource ViewerBackground}" ClipToBounds="True" SizeChanged="ViewportChanged" MouseWheel="ViewerWheel" MouseMove="PanMove" MouseLeave="PointerLeft" LostMouseCapture="CaptureLost" MouseDown="ViewerMouseDown" MouseUp="ViewerMouseUp" MouseEnter="ViewerPointerEntered">
+    <Canvas IsHitTestVisible="False"><Image x:Name="Picture" Source="{Binding Image}" Stretch="Fill" RenderOptions.BitmapScalingMode="HighQuality" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5" SizeChanged="ImageLayoutChanged">
+     <Image.RenderTransform><TransformGroup><RotateTransform x:Name="Rotation"/><TranslateTransform x:Name="Pan"/></TransformGroup></Image.RenderTransform>
+    </Image>
+    <Rectangle x:Name="ImageGrid" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5" RenderTransform="{Binding RenderTransform, ElementName=Picture}"/>
+    </Canvas>
+    <TextBlock Text="{Binding Message}" Foreground="{DynamicResource PanelForeground}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="500" IsHitTestVisible="False"/>
+    <local:LoupeOverlay x:Name="LoupeLayer" Visibility="Collapsed" IsHitTestVisible="False"/>
+   </Grid>
+   </DockPanel>
+   <DockPanel x:Name="InfoPanel" Grid.Column="3" SizeChanged="PaneLayoutChanged">
+    <Border DockPanel.Dock="Right" Width="{DynamicResource UiInfoRailWidth}" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1,0,0,0">
+     <ToggleButton x:Name="InfoToggle" Width="{DynamicResource UiInfoButtonWidth}" Height="68" VerticalAlignment="Top" Margin="3,6" ToolTip="画像情報の表示切り替え" Foreground="{DynamicResource PanelForeground}" Checked="MetadataPanelOpened" Unchecked="MetadataPanelClosed">
+      <ToggleButton.Template><ControlTemplate TargetType="ToggleButton">
+       <Border x:Name="RailSurface" CornerRadius="7" Background="Transparent" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1" Padding="3">
+        <StackPanel VerticalAlignment="Center"><local:VectorIcon Kind="Info" Width="22" Height="22" HorizontalAlignment="Center"/><TextBlock Text="情報" FontSize="11" HorizontalAlignment="Center" Margin="0,5,0,0"/></StackPanel>
+       </Border>
+       <ControlTemplate.Triggers>
+        <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="RailSurface" Property="Background" Value="{DynamicResource HoverBrush}"/></Trigger>
+        <Trigger Property="IsChecked" Value="True"><Setter TargetName="RailSurface" Property="Background" Value="{DynamicResource SelectionBrush}"/></Trigger>
+        <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="RailSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/></Trigger>
+       </ControlTemplate.Triggers>
+      </ControlTemplate></ToggleButton.Template>
+     </ToggleButton>
+    </Border>
+    <Border x:Name="InfoContent" Width="320" Visibility="{Binding IsChecked, ElementName=InfoToggle, Converter={StaticResource BooleanVisibility}}" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1,0,0,0" CornerRadius="8,0,0,8">
+     <DockPanel><Thumb x:Name="InfoResizeGrip" DockPanel.Dock="Left" Width="8" Cursor="SizeWE" DragDelta="InfoResizeDragged" ToolTip="ドラッグして情報パネルの幅を変更">
+      <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="Transparent"><Border Width="2" Height="40" CornerRadius="1" Background="{DynamicResource DividerBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border></ControlTemplate></Thumb.Template>
+     </Thumb>
+     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"><StackPanel Margin="12"><TextBlock Text="{Binding Details}" Foreground="{DynamicResource PanelForeground}" TextWrapping="Wrap"/><Separator Margin="0,14"/><TextBlock Text="選択画像のAI生成情報" FontWeight="SemiBold" Margin="0,0,0,8"/><TextBox x:Name="AiMetadataText" Text="{Binding MetadataText,Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" MaxHeight="480" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"/></StackPanel></ScrollViewer>
+     </DockPanel>
+    </Border>
+   </DockPanel>
+  </Grid>
+ </DockPanel>
+ <Grid x:Name="FullscreenOverlay" Visibility="Collapsed" Panel.ZIndex="100">
+  <Border x:Name="FullscreenTopHost" HorizontalAlignment="Stretch" VerticalAlignment="Top" Visibility="Collapsed" Background="{DynamicResource PanelBackground}" CornerRadius="0,0,8,8" Panel.ZIndex="3"/>
+  <Border x:Name="FullscreenLeftHost" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="400" Visibility="Collapsed" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="0,0,1,0" CornerRadius="0,8,8,0"/>
+  <Border x:Name="FullscreenRightHost" HorizontalAlignment="Right" VerticalAlignment="Stretch" Visibility="Collapsed" Background="{DynamicResource PanelBackground}" BorderBrush="{DynamicResource DividerBrush}" BorderThickness="1,0,0,0" CornerRadius="8,0,0,8"/>
+  <Border x:Name="FullscreenBottomHost" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Visibility="Collapsed" Background="{DynamicResource PanelBackground}" CornerRadius="8,8,0,0" Panel.ZIndex="2"/>
+ </Grid>
+ </Grid>
+</Window>

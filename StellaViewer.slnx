@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/StellaViewer.Core/StellaViewer.Core.csproj" />
+    <Project Path="src/StellaViewer.Infrastructure/StellaViewer.Infrastructure.csproj" />
+    <Project Path="src/StellaViewer.App/StellaViewer.App.csproj" />
+  </Folder>
+  <Folder Name="/third_party/">
+    <Project Path="third_party/bzPSD/StellaViewer.BzPsd.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StellaViewer.SmokeTests/StellaViewer.SmokeTests.csproj" />
+  </Folder>
+</Solution>

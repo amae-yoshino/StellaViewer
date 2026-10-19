@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
+  <Target Name="BuildClipPreview" BeforeTargets="BeforeBuild" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Exec Command="&quot;$(MSBuildProgramFiles32)/Microsoft Visual Studio/Installer/vswhere.exe&quot; -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin/cmake.exe" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="ClipCMakeExe" />
+    </Exec>
+    <Error Condition="'$(ClipCMakeExe)' == ''" Text="CLIP support requires Visual Studio desktop C++ and CMake tools." />
+    <Exec Command="&quot;$(ClipCMakeExe)&quot; -S &quot;$(MSBuildProjectDirectory)/../StellaViewer.ClipPreview&quot; -B &quot;$(MSBuildProjectDirectory)/../../artifacts/native-clip&quot; -G &quot;Visual Studio 18 2026&quot; -A x64" />
+    <Exec Command="&quot;$(ClipCMakeExe)&quot; --build &quot;$(MSBuildProjectDirectory)/../../artifacts/native-clip&quot; --config Release --parallel 1 -- /nr:false" />
+  </Target>
+  <ItemGroup>
+    <PackageReference Include="SharpCompress" Version="0.50.4" />
+    <PackageReference Include="PDFtoImage" Version="5.4.0" />
+    <ProjectReference Include="../StellaViewer.Core/StellaViewer.Core.csproj" />
+    <ProjectReference Include="../../third_party/bzPSD/StellaViewer.BzPsd.csproj" />
+    <PackageReference Include="Magick.NET-Q8-x64" Version="15.0.0" />
+    <Content Include="../../artifacts/native-clip/Release/StellaViewer.ClipPreview.exe" Link="StellaViewer.ClipPreview.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../artifacts/native-clip/Release/StellaViewer.FileOperations.dll" Link="StellaViewer.FileOperations.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

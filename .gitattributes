@@ -1,2 +1,5 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Keep vendor license bytes exactly as supplied by NuGet.
+licenses/** -text -whitespace
+# Preserve pinned upstream source bytes and their recorded SHA256 values.
+third_party/bzPSD/src/** -text -whitespace
+third_party/bzPSD/LICENSE -text -whitespace

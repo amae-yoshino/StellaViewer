@@ -1,0 +1,18 @@
+SQLite is in the public domain. Official statement: https://sqlite.org/copyright.html
+Source archive: https://sqlite.org/2026/sqlite-amalgamation-3540000.zip
+Version: 3.54.0
+SHA256: 68e913b0fe8ec6b4e5f391c594a28872884e80d6cd042a1e50c957be46b5aa4d
+Official download SHA3-256 (verified): 7b670a62fdfbd672b75fef004cb703c8a3e87d3a5cc7d675b4a08337004a2d93
+
+The source header's dedication is retained below:
+/*
+** 2001-09-15
+**
+** The author disclaims copyright to this source code.  In place of
+** a legal notice, here is a blessing:
+**
+**    May you do good and not evil.
+**    May you find forgiveness for yourself and forgive others.
+**    May you share freely, never taking more than you give.
+**
+*************************************************************************

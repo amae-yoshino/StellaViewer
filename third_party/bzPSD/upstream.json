@@ -1,0 +1,31 @@
+{
+  "repository": "https://github.com/bizzehdee/bzPSD",
+  "commit": "06b3f52dd77a42a20328dd315ab5939a2d846c64",
+  "license": "BSD-3-Clause",
+  "sourceFilesSha256": {
+    "src/AlphaChannels.cs": "ff48c911b1f3cb918fceb33b57264b98349e1fb9e734730cd048b88f0e5868ab",
+    "src/BinaryReverseReader.cs": "35fdce4f74347919646ddc999250103c9e3eea305ee84159f9c4daa598b176cb",
+    "src/BinaryReverseWriter.cs": "36323bc4ccc6c79a931edf647f9ddea1ab862a92b2ccbd44b83165a79c75a202",
+    "src/ColorMode.cs": "40580f8804f94330408cab78f11686e484ee2614c2acff54ec33d4b79e6fb558",
+    "src/DisplayInfo.cs": "7b96452259eb689bf9cef53a54d6ef6105ab95c711031c20cf808d17b1859dfd",
+    "src/ImageCompression.cs": "d26171359aabee65fea945401c482c878c1b13284f1736ce20b2c6f46d0a19c4",
+    "src/ImageDecoder.cs": "ee38722b560b97219686858806055ee7279994a3e04b8d0d5ad8ce4f9c8269be",
+    "src/ImageResource.cs": "8fd0007de2dfb1da824fa5d62aba025561b5dd0bd480efae8c42f46e5c998d1f",
+    "src/Layer.cs": "641ea86251bd4edb0ab2dc13b33ae140becba3af079c06eb3b2dddea958dd625",
+    "src/LayerAdjusmentLayerInfo.cs": "b7b6ad3b33f3ba9f2728fddf97101a8314947661a17974f6749ed044704f877b",
+    "src/LayerBlendingRanges.cs": "bd891b62a770de7410fd8f9208a2541b04ed1d1f705acd1f23ae0091df9d38fc",
+    "src/LayerChannel.cs": "ff4010754eecb801d7047d5d1cd553cfc6e06a304a54fd3102979392eb20daf9",
+    "src/LayerMask.cs": "d1c859670ce40108b885f76810cff2a2a2a4cb23408709b02eab31b695cbcefc",
+    "src/LengthWriter.cs": "2b4a0366d636d6e5d63ff5fe1c472795c651a884aed4bcd68861759ba049d9da",
+    "src/PsdBitmap.cs": "ff771f5f3c74e5a6e5b8ca2dea480f02c9d3caf6d6b10af10d6529a4bd6f9b96",
+    "src/PsdDescriptor.cs": "d932b1e32d2f7646ecdc1f7eb20dda24b4210588287daf3cff88b14c99483ac5",
+    "src/PSDFile.cs": "5a4184e724a61c4f143d2ad7599257889a9f3c3eeec7cb6de521409567bb2043",
+    "src/ResolutionInfo.cs": "23610e75f034d0dcb04248417267c2b4f1c1d8e4cf6dc8572f55e66f96073759",
+    "src/ResourceIDs.cs": "8a6bcd21527731085707f1608aee7b8c5cb89a6d7efa6fbacb35f5aa192b0712",
+    "src/RleHelper.cs": "56c4417a0d37b8b0ed0c41a3c41eb9ae5f70de5ff6c8d6c1b9afac01b3b2f9ea",
+    "src/TextLayer.cs": "0ac20ba29ac2f2b8e1f94186d42983f104c1084716b758fcf4dd0a719845bc95",
+    "src/Thumbnail.cs": "a2d948452cd6549593790d7c562f1dea762a5429a98e2f57be21ce63a117c150",
+    "src/UnicodeAlphaNames.cs": "802eab945aed1d6a26e91dd5b8cfe722d71fd99c91f44b55c93c3cd7259273b2",
+    "src/Utilities.cs": "97788bd58aa41e53679d00f721d9033e11d31c9303ef2600ecd4f5cd92682c9f"
+  }
+}

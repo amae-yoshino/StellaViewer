@@ -1,0 +1,331 @@
+<Window x:Class="StellaViewer.App.SettingsWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="StellaViewer の設定" Icon="Assets/StellaViewer.ico" Width="760" Height="640" MinWidth="700" MinHeight="560"
+ WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+ Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" FontSize="14">
+ <Window.Resources>
+  <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Setter Property="Padding" Value="12,5"/><Setter Property="Margin" Value="4"/><Setter Property="Background" Value="{DynamicResource PanelBackground}"/><Setter Property="Foreground" Value="{DynamicResource PanelForeground}"/></Style>
+  <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{DynamicResource PanelForeground}"/></Style>
+  <Style TargetType="TabControl">
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TabControl">
+    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition/></Grid.ColumnDefinitions>
+     <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><TabPanel IsItemsHost="True" KeyboardNavigation.TabIndex="1"/></ScrollViewer>
+     <Border Grid.Column="1" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"><ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"/></Border>
+    </Grid>
+   </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType="TabItem">
+   <Setter Property="Background" Value="{DynamicResource PanelBackground}"/><Setter Property="Foreground" Value="{DynamicResource PanelForeground}"/>
+   <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}"/><Setter Property="Padding" Value="10,10"/><Setter Property="Margin" Value="0,0,8,4"/><Setter Property="Width" Value="136"/>
+   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="TabItem">
+    <Border x:Name="TabSurface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
+     <ContentPresenter x:Name="TabHeader" ContentSource="Header" RecognizesAccessKey="True" HorizontalAlignment="Left" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+    </Border>
+    <ControlTemplate.Triggers>
+     <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="TabSurface" Property="Background" Value="{DynamicResource HoverBrush}"/></Trigger>
+     <Trigger Property="IsSelected" Value="True"><Setter TargetName="TabSurface" Property="Background" Value="{DynamicResource SelectionBrush}"/><Setter TargetName="TabSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/><Setter TargetName="TabHeader" Property="TextElement.FontWeight" Value="SemiBold"/></Trigger>
+     <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="TabSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/><Setter TargetName="TabSurface" Property="BorderThickness" Value="2"/></Trigger>
+     <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
+    </ControlTemplate.Triggers>
+   </ControlTemplate></Setter.Value></Setter>
+  </Style>
+ </Window.Resources>
+ <DockPanel Margin="22" Background="{DynamicResource PanelBackground}">
+  <StackPanel DockPanel.Dock="Top" Margin="0,0,0,18">
+   <TextBlock Text="設定" FontSize="24" FontWeight="SemiBold"/>
+   <TextBlock Text="「適用」は閉じずに反映・保存。「保存」は反映して閉じます。" TextWrapping="Wrap" Margin="0,6,0,0" Opacity="0.7"/>
+  </StackPanel>
+  <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+   <Button x:Name="SaveButton" Content="保存" IsDefault="True" Click="SaveClicked" MinWidth="90"/>
+   <Button x:Name="CancelButton" Content="キャンセル" IsCancel="True" ToolTip="最後の適用以降の変更を破棄"/>
+   <Button x:Name="ApplyButton" Content="適用" Click="ApplyClicked" MinWidth="80"/>
+  </StackPanel>
+  <TextBlock x:Name="ErrorText" DockPanel.Dock="Bottom" TextWrapping="Wrap" Foreground="#D64B48" Margin="0,6,0,0"/>
+  <TabControl x:Name="SettingsTabs" TabStripPlacement="Left" Background="{DynamicResource PanelBackground}" Foreground="{DynamicResource PanelForeground}" BorderBrush="{DynamicResource DividerBrush}">
+   <TabItem Header="表示と操作">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+     <DockPanel Margin="0,0,0,12"><Button DockPanel.Dock="Right" Content="初期値" Tag="ui-size" Click="ResetClicked"/><TextBlock Text="UIと文字の大きさ" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="UI全体の倍率"/>
+     <DockPanel Margin="0,6,0,10"><TextBlock DockPanel.Dock="Right" Width="56" Text="{Binding Value, ElementName=UiScale, StringFormat={}{0:0}%}" TextAlignment="Right" VerticalAlignment="Center"/><Slider x:Name="UiScale" Minimum="75" Maximum="150" TickFrequency="5" IsSnapToTickEnabled="True" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="文字の基準サイズ"/>
+     <DockPanel Margin="0,6,0,10"><TextBlock DockPanel.Dock="Right" Width="56" Text="{Binding Value, ElementName=UiFontSize, StringFormat={}{0:0} DIP}" TextAlignment="Right" VerticalAlignment="Center"/><Slider x:Name="UiFontSize" Minimum="10" Maximum="24" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="初期値は100%・14 DIP。UI倍率はボタン・余白・文字に、基準サイズは文字に適用します。保存・適用で反映し、画像の倍率とは別に設定します。" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,0,0,18"/>
+
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="folder-opening" Click="ResetClicked"/>
+      <StackPanel><TextBlock Text="フォルダを開いたときの画像" Margin="0,0,0,6"/><ComboBox x:Name="FolderOpening" HorizontalAlignment="Left"><ComboBoxItem Content="現在の並び順の先頭"/><ComboBoxItem Content="そのフォルダで最後に見た画像"/></ComboBox></StackPanel>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="theme" Click="ResetClicked"/>
+      <CheckBox x:Name="Dark" Content="ダークテーマ" VerticalAlignment="Center"/>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="wheel" Click="ResetClicked"/>
+      <CheckBox x:Name="WheelZoom" Content="Ctrl＋ホイールで拡大・縮小" VerticalAlignment="Center"/>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12"><Button DockPanel.Dock="Right" Content="初期値" Tag="enlarge-small" Click="ResetClicked"/><CheckBox x:Name="EnlargeSmall" Content="小さい画像も表示領域に合わせて拡大" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="初期表示・リセット時に適用します（最大1000%）。手動で指定した倍率は維持します。" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,0,0,12"/>
+     <DockPanel Margin="0,0,0,6"><Button DockPanel.Dock="Right" Content="初期値" Tag="slideshow" Click="ResetClicked"/><TextBlock Text="スライドショーの表示間隔" VerticalAlignment="Center"/></DockPanel>
+     <DockPanel Margin="0,0,0,8"><TextBlock DockPanel.Dock="Right" Width="56" Text="{Binding Value, ElementName=SlideshowInterval, StringFormat={}{0:0} 秒}" TextAlignment="Right" VerticalAlignment="Center"/><Slider x:Name="SlideshowInterval" Minimum="1" Maximum="60" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="初期値3秒。現在の並び順で末尾から先頭へ繰り返します。手動のページ送りで待ち時間をリセットし、別の場所を開くと停止します。" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,0,0,16"/>
+     <DockPanel Margin="0,0,0,6"><Button DockPanel.Dock="Right" Content="初期値" Tag="list-scroll" Click="ResetClicked"/><TextBlock Text="一覧のホイールスクロール量" VerticalAlignment="Center"/></DockPanel>
+     <DockPanel Margin="0,0,0,8"><TextBlock DockPanel.Dock="Right" Width="56" Text="{Binding Value, ElementName=ListScrollAmount, StringFormat={}{0:0}%}" TextAlignment="Right" VerticalAlignment="Center"/><Slider x:Name="ListScrollAmount" Minimum="25" Maximum="400" TickFrequency="25" IsSnapToTickEnabled="True" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="100%が標準。画像一覧とフォルダ・書庫一覧の全表示形式に共通です。Windowsのスクロール量を基準に調整します。" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,0,0,16"/>
+     <DockPanel Margin="0,0,0,6"><Button DockPanel.Dock="Right" Content="初期値" Tag="list-font" Click="ResetClicked"/><TextBlock Text="一覧の文字サイズ" VerticalAlignment="Center"/></DockPanel>
+     <DockPanel Margin="0,0,0,8"><TextBlock DockPanel.Dock="Right" Width="56" Text="{Binding Value, ElementName=ListFontSize, StringFormat={}{0:0} DIP}" TextAlignment="Right" VerticalAlignment="Center"/><Slider x:Name="ListFontSize" Minimum="10" Maximum="24" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="初期値14 DIP。画像一覧とフォルダ・書庫一覧に共通。補助情報の文字も比率を保って変更します。UI全体の倍率はこの文字にも適用されます。" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,0,0,16"/>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="hidden" Click="ResetClicked"/>
+      <StackPanel VerticalAlignment="Center">
+       <CheckBox x:Name="Hidden" Content="隠しフォルダを一覧に表示しない"/>
+       <TextBlock Text="ツリーとフォルダ一覧に適用。直接入力では開けます。" FontSize="11" Opacity="0.7" Margin="0,6,0,0" TextWrapping="Wrap"/>
+      </StackPanel>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="tray" Click="ResetClicked"/>
+      <StackPanel><CheckBox x:Name="TrayMinimize" Content="最小化時にタスクトレイへ格納する"/><TextBlock Text="トレイのダブルクリック、または右クリック → 復元で戻せます。" TextWrapping="Wrap" FontSize="11" Opacity="0.7" Margin="0,6,0,0"/></StackPanel>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="instances" Click="ResetClicked"/>
+      <StackPanel><CheckBox x:Name="MultipleInstances" Content="多重起動を許可する"/><TextBlock Text="次の起動から適用。許可しない場合は既存のウィンドウを開き、指定ファイルを渡します。" TextWrapping="Wrap" FontSize="11" Opacity="0.7" Margin="0,6,0,0"/></StackPanel>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="delete" Click="ResetClicked"/>
+      <StackPanel><CheckBox x:Name="DeleteEnabled" Content="ファイル・フォルダの削除を有効にする"/><TextBlock Text="削除前に対象を確認します。無効でも直近の削除は取り消せます。" TextWrapping="Wrap" FontSize="11" Opacity="0.7" Margin="0,6,0,0"/></StackPanel>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="list" Click="ResetClicked"/>
+      <StackPanel><TextBlock Text="画像一覧の表示方法" Margin="0,0,0,6"/>
+       <ComboBox x:Name="Mode" Width="180" HorizontalAlignment="Left">
+        <ComboBoxItem Content="ファイル名のみ"/><ComboBoxItem Content="詳細表示"/><ComboBoxItem Content="タイル表示"/>
+       </ComboBox>
+      </StackPanel>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="locations" Click="ResetClicked"/>
+      <StackPanel><TextBlock Text="フォルダ・書庫一覧の表示方法" Margin="0,0,0,6"/>
+       <ComboBox x:Name="LocationMode" Width="180" HorizontalAlignment="Left">
+        <ComboBoxItem Content="名前のみ"/><ComboBoxItem Content="詳細表示"/><ComboBoxItem Content="タイル表示"/>
+       </ComboBox>
+      </StackPanel>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="image-thumbnail" Click="ResetClicked"/>
+      <StackPanel><TextBlock Text="画像一覧のサムネイルサイズ" Margin="0,0,0,6"/><ComboBox x:Name="ImageThumbnailSize" Width="180" HorizontalAlignment="Left"><ComboBoxItem Content="小"/><ComboBoxItem Content="標準"/><ComboBoxItem Content="大"/><ComboBoxItem Content="特大"/></ComboBox></StackPanel>
+     </DockPanel>
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="location-thumbnail" Click="ResetClicked"/>
+      <StackPanel><TextBlock Text="フォルダ・書庫一覧のサムネイルサイズ" Margin="0,0,0,6" TextWrapping="Wrap"/><ComboBox x:Name="LocationThumbnailSize" Width="180" HorizontalAlignment="Left"><ComboBoxItem Content="小"/><ComboBoxItem Content="標準"/><ComboBoxItem Content="大"/><ComboBoxItem Content="特大"/></ComboBox></StackPanel>
+     </DockPanel>
+     <DockPanel>
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="toolbar" Click="ResetClicked"/>
+      <StackPanel><TextBlock Text="画像操作バー（番号移動・回転）" Margin="0,0,0,6"/>
+       <ComboBox x:Name="ToolbarPlacement" Width="180" HorizontalAlignment="Left">
+        <ComboBoxItem Content="画像領域の上部"/><ComboBoxItem Content="画像領域の下部"/><ComboBoxItem Content="非表示"/>
+       </ComboBox>
+      </StackPanel>
+     </DockPanel>
+     <DockPanel Margin="0,12,0,0">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="restore" Click="ResetClicked"/>
+      <CheckBox x:Name="RestoreView" Content="起動時に最後のフォルダ・画像を復元" VerticalAlignment="Center" ToolTip="ウィンドウ配置と一覧表示の設定は、オフでも復元します。"/>
+     </DockPanel>
+    </StackPanel></ScrollViewer>
+   </TabItem>
+   <TabItem Header="ショートカット">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+     <DockPanel Margin="0,0,0,8">
+      <Button DockPanel.Dock="Right" Content="キーを初期化" Click="ResetAllShortcutsClicked" FontSize="12" Padding="8,4"/>
+      <TextBlock Text="キーボード設定" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </DockPanel>
+     <TextBlock Text="1つの操作に複数のキーを設定できます。「追加」または各キーの「変更」を押して入力し、適用または保存で反映します。" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,0,0,10"/>
+     <StackPanel x:Name="CapturePanel" Visibility="Collapsed" Margin="0,0,0,12">
+      <TextBlock x:Name="CaptureHint" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,5"/>
+      <TextBox x:Name="ShortcutCapture" IsReadOnly="True" Height="28" VerticalContentAlignment="Center" PreviewKeyDown="ShortcutCaptureKey"/>
+     </StackPanel>
+     <ItemsControl x:Name="ShortcutRows">
+      <ItemsControl.ItemTemplate><DataTemplate>
+       <StackPanel Margin="0,0,0,10">
+        <DockPanel>
+         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+          <Button Content="追加" Click="AddShortcutClicked" FontSize="12" Padding="8,4" Margin="2,3"/>
+          <Button Content="初期値" Click="ResetShortcutClicked" FontSize="12" Padding="8,4" Margin="2,3"/>
+         </StackPanel>
+         <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
+        </DockPanel>
+        <TextBlock Text="{Binding EmptyHint}" FontSize="12" Opacity="0.6">
+         <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers>
+          <DataTrigger Binding="{Binding EmptyHint}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+         </Style.Triggers></Style></TextBlock.Style>
+        </TextBlock>
+        <ItemsControl ItemsSource="{Binding Keys}" Margin="12,0,0,0">
+         <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+         <ItemsControl.ItemTemplate><DataTemplate>
+          <StackPanel Orientation="Horizontal">
+           <TextBlock Text="{Binding Separator}" FontSize="12" VerticalAlignment="Center"/>
+           <TextBlock Text="{Binding Gesture}" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+           <Button Content="変更" Click="ChangeShortcutClicked" FontSize="12" Padding="6,4" Margin="2,2"/>
+           <Button Content="解除" Click="ClearShortcutClicked" FontSize="12" Padding="6,4" Margin="2,2"/>
+          </StackPanel>
+         </DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+       </StackPanel>
+      </DataTemplate></ItemsControl.ItemTemplate>
+     </ItemsControl>
+     <TextBlock Text="Escは全画面終了用、Tabはフォーカス移動用に固定です。Alt＋F4とWindowsキーを含む組み合わせは割り当てできません。文字入力欄や選択欄では画像操作を実行しません。" FontSize="11" Opacity="0.7" TextWrapping="Wrap" Margin="0,12,0,18"/>
+     <DockPanel Margin="0,0,0,8"><Button DockPanel.Dock="Right" Content="マウスを初期値に戻す" Click="ResetMouseClicked"/><TextBlock Text="画像領域のマウス操作" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+     <ItemsControl x:Name="MouseRows" Margin="0,0,0,12"><ItemsControl.ItemTemplate><DataTemplate>
+      <Grid Margin="0,0,0,8"><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+       <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+       <ComboBox Grid.Column="1" ItemsSource="{Binding Options}" DisplayMemberPath="Name" SelectedValuePath="Command" SelectedValue="{Binding Command,Mode=TwoWay,UpdateSourceTrigger=PropertyChanged}"/>
+      </Grid>
+     </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+     <Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="150"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <TextBlock Text="画像移動のドラッグ" VerticalAlignment="Center"/>
+      <ComboBox x:Name="PanButtonBox" Grid.Column="1"><ComboBoxItem Content="左ボタン"/><ComboBoxItem Content="右ボタン"/><ComboBoxItem Content="ホイールボタン"/><ComboBoxItem Content="無効"/></ComboBox>
+     </Grid>
+     <CheckBox x:Name="DragPageEnabled" Content="左ボタンの横ドラッグでページを送る" Margin="0,0,0,8"/>
+     <TextBlock Text="左へ60 DIP以上ドラッグで次、右で前へ移動します。画像移動に使うボタンと重なる場合は、拡大画像の移動を優先します。" FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,10"/>
+     <TextBlock Text="同じ操作を複数のボタンに割り当てられます。一覧上のクリック・ホイール操作には適用しません。画像の移動は表示領域より大きいときだけ有効です。ドラッグ後はクリック操作を実行しません。" FontSize="12" Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,12"/>
+     <TextBlock Text="その他の操作" FontWeight="SemiBold" Margin="0,0,0,8"/>
+     <TextBlock TextWrapping="Wrap" LineHeight="27">
+      Ctrl＋ホイール：拡大・縮小（設定が有効な場合）<LineBreak/>
+      下部の全画面ボタン：全画面の開始・終了<LineBreak/>
+      Esc：全画面を終了<LineBreak/>
+      入力欄のEnter：確定<LineBreak/>
+      倍率・アドレス入力欄のEsc：入力を取り消し
+     </TextBlock>
+    </StackPanel></ScrollViewer>
+   </TabItem>
+   <TabItem Header="背景とグリッド">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+     <DockPanel Margin="0,0,0,10">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="background" Click="ResetClicked"/>
+      <TextBlock Text="画像領域の背景" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </DockPanel>
+     <ComboBox x:Name="BackgroundMode" Width="220" HorizontalAlignment="Left" Margin="0,0,0,10">
+      <ComboBoxItem Content="テーマに合わせる"/><ComboBoxItem Content="指定した単色"/><ComboBoxItem Content="市松模様"/>
+     </ComboBox>
+     <TextBlock Text="背景色（#RRGGBB）" Margin="0,0,0,5"/>
+     <TextBox x:Name="BackgroundColor" Width="140" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+     <TextBlock Text="背景色は「指定した単色」で使います。画像の透過部分にも表示されます。" FontSize="11" Opacity="0.7" TextWrapping="Wrap"/>
+     <DockPanel Margin="0,18,0,10">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="checker" Click="ResetClicked"/>
+      <TextBlock Text="市松模様の詳細" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </DockPanel>
+     <Grid Margin="0,0,0,10">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="160"/><ColumnDefinition Width="160"/></Grid.ColumnDefinitions>
+      <StackPanel><TextBlock Text="色1（#RRGGBB）" Margin="0,0,0,5"/>
+       <TextBox x:Name="CheckerColor1" Width="140" HorizontalAlignment="Left"/></StackPanel>
+      <StackPanel Grid.Column="1"><TextBlock Text="色2（#RRGGBB）" Margin="0,0,0,5"/>
+       <TextBox x:Name="CheckerColor2" Width="140" HorizontalAlignment="Left"/></StackPanel>
+     </Grid>
+     <TextBlock Text="1マスの一辺（1～256 DIP）" Margin="0,0,0,5"/>
+     <TextBox x:Name="CheckerSize" Width="140" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+     <TextBlock Text="背景が「市松模様」のときに使用します。画像の拡縮にかかわらず、画面上で一定の大きさに表示します。" FontSize="11" Opacity="0.7" TextWrapping="Wrap"/>
+     <DockPanel Margin="0,22,0,10">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="grid" Click="ResetClicked"/>
+      <CheckBox x:Name="GridVisible" Content="画像にグリッドを表示" VerticalAlignment="Center"/>
+     </DockPanel>
+     <TextBlock Text="間隔（画像のpx）" Margin="0,0,0,5"/>
+     <TextBox x:Name="GridSpacing" Width="140" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+     <TextBlock Text="線の色（#RRGGBB）" Margin="0,0,0,5"/>
+     <TextBox x:Name="GridColor" Width="140" HorizontalAlignment="Left" Margin="0,0,0,10"/>
+     <DockPanel Margin="0,0,0,5">
+      <TextBlock Text="線の不透明度"/>
+      <TextBlock Text="{Binding Value, ElementName=GridOpacity, StringFormat={}{0:0}%}" Margin="12,0,0,0"/>
+     </DockPanel>
+     <Slider x:Name="GridOpacity" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"/>
+     <TextBlock Text="グリッドは画像座標に沿って拡縮・回転・移動します。元画像は変更しません。" FontSize="11" Opacity="0.7" TextWrapping="Wrap" Margin="0,10,0,0"/>
+    </StackPanel></ScrollViewer>
+   </TabItem>
+   <TabItem Header="見開き">
+    <StackPanel Margin="18">
+     <DockPanel Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="spread" Click="ResetClicked"/>
+      <TextBlock Text="ページの表示" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </DockPanel>
+     <ComboBox x:Name="PageMode" Width="220" HorizontalAlignment="Left" Margin="0,0,0,18">
+      <ComboBoxItem Content="単ページ"/><ComboBoxItem Content="見開き"/>
+     </ComboBox>
+     <TextBlock Text="綴じ方向" Margin="0,0,0,6"/>
+     <ComboBox x:Name="BindingDirection" Width="260" HorizontalAlignment="Left" Margin="0,0,0,16">
+      <ComboBoxItem Content="右綴じ（先のページを右に）"/><ComboBoxItem Content="左綴じ（先のページを左に）"/>
+     </ComboBox>
+     <TextBlock Text="見開きは選択したページを起点に2枚ずつ送ります。奇数の場合、最後は1枚と空白です。回転は見開き全体に適用します。" TextWrapping="Wrap" Opacity="0.7" FontSize="12"/>
+    </StackPanel>
+   </TabItem>
+   <TabItem Header="ルーペ">
+    <StackPanel Margin="18">
+     <DockPanel Margin="0,0,0,16">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="loupe" Click="ResetClicked"/>
+      <TextBlock Text="正方形のルーペ" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </DockPanel>
+     <TextBlock Text="画像領域でホイールボタンをクリックするとオン／オフを切り替えます。オンの間はマウス位置に追従します。" TextWrapping="Wrap" Margin="0,0,0,18"/>
+     <TextBlock Text="現在の表示に対する拡大率（1～16倍）" Margin="0,0,0,6"/>
+     <TextBox x:Name="LoupeMagnification" Width="140" HorizontalAlignment="Left" Margin="0,0,0,18"/>
+     <TextBlock Text="正方形の一辺（80～800 DIP）" Margin="0,0,0,6"/>
+     <TextBox x:Name="LoupeSize" Width="140" HorizontalAlignment="Left" Margin="0,0,0,16"/>
+     <TextBlock Text="初期値は2倍・240 DIP。DIPは画面の拡大率に応じて大きくなる表示単位です。ルーペは画像領域内に収まる大きさまで表示します。" TextWrapping="Wrap" FontSize="12" Opacity="0.7"/>
+    </StackPanel>
+   </TabItem>
+   <TabItem Header="描画">
+    <StackPanel Margin="18">
+     <DockPanel Margin="0,0,0,16">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="rendering" Click="ResetClicked"/>
+      <TextBlock Text="GPU描画" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </DockPanel>
+     <ComboBox x:Name="RenderingMode" Width="300" HorizontalAlignment="Left" Margin="0,0,0,16">
+      <ComboBoxItem Content="自動"/><ComboBoxItem Content="無効（ソフトウェア描画）"/>
+     </ComboBox>
+     <TextBlock Text="自動では、利用できるGPU描画機能をWPFが選択します。環境によってはソフトウェア描画になります。" TextWrapping="Wrap" Margin="0,0,0,12"/>
+     <TextBlock Text="表示の乱れなどがある場合は「無効」を選択できます。適用すると、このウィンドウと設定画面の描画に反映し、次回起動時にも復元します。画像ファイルは変更しません。" TextWrapping="Wrap" FontSize="12" Opacity="0.7"/>
+    </StackPanel>
+   </TabItem>
+   <TabItem Header="ネットワーク">
+    <StackPanel Margin="18">
+     <DockPanel Margin="0,0,0,16">
+      <Button DockPanel.Dock="Right" Content="初期値" Tag="network" Click="ResetClicked"/>
+      <CheckBox x:Name="NetworkAllowed" Content="ネットワーク上の場所の閲覧を許可" VerticalAlignment="Center"/>
+     </DockPanel>
+     <TextBlock Text="ネットワークドライブとUNCパスに適用します。初期状態は無効です。直接入力・履歴・起動時の復元でも、この設定に従います。" TextWrapping="Wrap" Margin="0,0,0,14"/>
+     <TextBlock Text="無効にすると読み込み済みの画像を残し、監視と追加の読み込みを止めます。再び許可した後は、再読み込みで閲覧を再開できます。" TextWrapping="Wrap" FontSize="12" Opacity="0.7"/>
+    </StackPanel>
+   </TabItem>
+   <TabItem Header="キャッシュ">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+     <DockPanel Margin="0,0,0,16"><Button DockPanel.Dock="Right" Content="初期値" Tag="cache" Click="ResetClicked"/><TextBlock Text="先読みとキャッシュ" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
+     <TextBlock Text="メモリキャッシュ上限（MiB）" Margin="0,0,0,6"/>
+     <TextBox x:Name="MemoryCacheMiB" Width="160" HorizontalAlignment="Left" Margin="0,0,0,14"/>
+     <TextBlock Text="ディスクキャッシュ上限（MiB）" Margin="0,0,0,6"/>
+     <TextBox x:Name="DiskCacheMiB" Width="160" HorizontalAlignment="Left" Margin="0,0,0,14"/>
+     <TextBlock Text="先読み枚数（選択画像の前後それぞれ）" Margin="0,0,0,6"/>
+     <TextBox x:Name="PrefetchPages" Width="160" HorizontalAlignment="Left" Margin="0,0,0,14"/>
+     <TextBlock Text="初期値：メモリ512 MiB、ディスク2048 MiB、前後各2枚。1 MiB＝1,048,576 bytes。容量0はそのキャッシュを無効にし、先読み0は先読みを止めます。" TextWrapping="Wrap" Margin="0,0,0,12"/>
+     <TextBlock Text="通常フォルダ・書庫・入れ子書庫内の静止画像とPDFページが対象です。アニメーションは先頭フレームだけを再利用します。先読みは共通のメモリ空き容量内で行い、メモリ0では停止します。表示中の画像に必要なメモリは上限とは別に保持します。設定の変更で表示画像は消えません。" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,0,0,12"/>
+     <TextBlock Text="ディスクの保存先はアプリのデータフォルダ内のCacheです。閲覧画像の原本は変更しません。容量を下げると古いキャッシュから削除します。" TextWrapping="Wrap" FontSize="12" Opacity="0.7"/>
+     <Separator Margin="0,14"/>
+     <TextBlock Text="キャッシュ管理" FontWeight="SemiBold"/>
+     <TextBlock x:Name="CacheUsageText" Text="使用量を確認しています…" TextWrapping="Wrap" Margin="0,8"/>
+     <WrapPanel><Button Content="更新" Click="RefreshCacheUsageClicked"/><Button Content="メモリをクリア" Tag="memory" Click="ClearCacheClicked"/><Button Content="ディスクをクリア" Tag="disk" Click="ClearCacheClicked"/><Button Content="両方クリア" Tag="both" Click="ClearCacheClicked"/></WrapPanel>
+     <TextBlock Text="表示中の画像は保持します。ディスクは全ウィンドウで共通です。閲覧すると再生成されます。" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,8,0,0"/>
+
+    </StackPanel></ScrollViewer>
+   </TabItem>
+   <TabItem Header="データと履歴">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
+     <TextBlock Text="履歴の記録" FontWeight="SemiBold" Margin="0,0,0,12"/>
+     <CheckBox x:Name="RecordRecent" Content="最近開いた場所を履歴に記録する" Margin="0,0,0,12"/>
+     <CheckBox x:Name="RecordView" Content="前回の閲覧場所・ページを保存する" Margin="0,0,0,12"/>
+     <TextBlock Text="保存・適用で反映します。記録を止めても既存の履歴は残ります。ウィンドウ配置は別に保存します。" TextWrapping="Wrap" FontSize="12" Opacity="0.7"/>
+     <Button Content="最近開いた場所の履歴を全削除…" Click="ClearHistoryClicked" HorizontalAlignment="Left" Margin="0,12,0,20"/>
+     <Button Content="保存を止めて閲覧位置を削除…" Click="ClearViewingStateClicked" HorizontalAlignment="Left" Margin="0,0,0,20"/>
+     <TextBlock Text="設定の移行" FontWeight="SemiBold" Margin="0,0,0,10"/>
+     <WrapPanel><Button Content="設定をエクスポート…" Click="ExportSettingsClicked"/><Button Content="設定をインポート…" Click="ImportSettingsClicked"/></WrapPanel>
+     <TextBlock Text="テーマ・表示・操作・ショートカット等をJSONファイルへ保存します。履歴・お気に入り・ウィンドウ配置は含みません。読み込み後は保存・適用で反映します。削除やネットワークの許可設定も含むため、内容を確認してください。" TextWrapping="Wrap" FontSize="12" Opacity="0.7" Margin="0,10,0,0"/>
+     <TextBlock x:Name="DataToolsStatus" TextWrapping="Wrap" Margin="0,12,0,0"/>
+    </StackPanel></ScrollViewer>
+   </TabItem>
+  </TabControl>
+ </DockPanel>
+</Window>
