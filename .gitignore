@@ -157,3 +157,5 @@ __pycache__/
 *.keystore
 *.mobileprovision
 *.crt.local
+# README用スクリーンショット
+!/images/main.png
