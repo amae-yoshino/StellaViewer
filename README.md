@@ -1,5 +1,7 @@
 # StellaViewer
 
+**[ダウンロード](https://github.com/amae-yoshino/StellaViewer/releases/download/v0.2.0-preview.13/StellaViewer-0.2.0-preview.13-win-x64.zip)** · [リリース情報](https://github.com/amae-yoshino/StellaViewer/releases/tag/v0.2.0-preview.13)
+
 ![スクリーンショット](images/main.png)
 
 Windows 11 x64向けの、C#／WPF製画像ビューアです。通常フォルダ、書庫、PDFを閲覧できます。現在は **0.2.0-preview.13** です。
